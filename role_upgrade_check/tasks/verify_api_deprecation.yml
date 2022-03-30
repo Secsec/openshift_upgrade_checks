@@ -1,0 +1,39 @@
+---
+- name: Check that removed API are not used anymore 
+  block:
+  - name: Fetch APIRequestCounts
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: APIRequestCount
+      api_version: apiserver.openshift.io/v1
+    register: apirequestcounts_list
+
+  - name: Filter the APIRequestCounts of the deprecated APIs
+    set_fact:
+      # to_json | from_json required because of a bug in when json_query use contains function
+      deprecatedapi_list: "{{ apirequestcounts_list.resources | to_json | from_json | json_query(jmesquery) }}"
+    vars:
+      jmesquery: "[?not_null(status.removedInRelease, ``)]" 
+
+  - name: Create a convenient list of APIRequestCounts of deprecated APIs 
+    set_fact:
+      #[Name, currentHour.requestCount, last24h.requestCount]
+      deprecatedapi_convenient: "{{ deprecatedapi_convenient | default([]) + [[ item | json_query('metadata.name'), item | json_query('status.currentHour.requestCount'), item | json_query('status.requestCount')]] }}"
+    loop: "{{ deprecatedapi_list }}"
+    loop_control:
+      label: "{{ item.metadata.name }}"
+
+  - name: Check taht APIs that will be removed are not used anymore 
+    assert:
+      that:
+        - item[1] | int == 0 # currentHour requestCount must be equal to 0
+        - item[2] | int == 0 # last24h requestCount must be equal to 0
+      quiet: yes
+      fail_msg: 
+        - "{{ item[0] }} API was called {{ item[1] }} times over the last hour and {{ item[2] }} over the last 24h."
+        - "Please investigate using the following command : oc get apirequestcounts {{ item[0] }} -o jsonpath='{range .status.currentHour..byUser[*]}{..byVerb[*].verb}{\",\"}{.username}{\",\"}{.userAgent}{\"\n\"}{end}' | sort -k 2 -t, -u | column -t -s, -NVERBS,USERNAME,USERAGENT"
+      
+    loop: "{{ deprecatedapi_convenient }}"
+    loop_control:
+      label: "{{ item[0] }}"
+...

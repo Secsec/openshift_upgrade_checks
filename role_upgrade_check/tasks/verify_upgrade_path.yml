@@ -1,0 +1,34 @@
+---
+- name: Check the upgrade path for your OpenShift version
+  block:
+  - name: Retrieve the raw informations before processing them
+    uri:
+      url: "https://api.openshift.com/api/upgrades_info/v1/graph?channel={{ role_upgrade_channel_name}}"
+      headers:
+        Content-Type: application/json
+      validate_certs: no
+    register: role_upgrade_info
+  
+  - name: Retrieve the channel list and the current version of the cluster in the raw datas
+    set_fact:
+      channels_list: "{{ item.metadata['io.openshift.upgrades.graph.release.channels'] }}"
+      version_list: "{{ version_list | default([]) + [item.version == role_upgrade_channel_version] }}"
+    with_items: "{{ role_upgrade_info.json.nodes }}"
+    
+  - name: Retrieve the index number of the starting entry corresponding to our current version
+    set_fact:
+      index_version: "{{ lookup('ansible.utils.index_of', version_list, 'eq', true) | int }}"
+   
+  - name: Correlate the edges with the starting version
+    set_fact:
+      edges_correlation: "{{ edges_correlation | default([]) +[item[1]] }}"
+    loop: "{{ role_upgrade_info.json.edges }}"
+    when:  item[0] | string == index_version
+  
+  - name: Retrieve the version based on the previous edge correlation
+    set_fact:
+      version_path: "{{ (version_path | default([]) + [role_upgrade_info.json.nodes[item].version]) | sort }}"
+    with_items: "{{ edges_correlation }}"
+  
+  - debug:
+      msg: "{{ version_path }}"

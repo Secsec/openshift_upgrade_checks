@@ -1,0 +1,42 @@
+---
+- name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
+  kubernetes.core.k8s_info:
+    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    kind: Route
+    name: prometheus-k8s
+    namespace: openshift-monitoring
+  register: monitoring_routes
+
+- name: Set the prometheus URL
+  set_fact:
+    role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
+
+- name: Retrieve Node CPU utilization
+  uri:
+    url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance:node_cpu_utilisation:rate1m*100" 
+    method: GET
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+    validate_certs: no
+  register: payload_loadcpu
+
+- name: Format the Prometheus response
+  set_fact:
+    payload_test: "{{ payload_loadcpu | json_query('json.data.result') }}"
+
+- name: Create a convenient list prior to checking CPU Usage 
+  set_fact:
+    node_list_cpu: "{{ node_list_cpu | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+  loop: "{{ payload_test }}"
+  loop_control:
+    label: "{{ item.metric.instance }}"
+
+- name: Assert that no CPU usage is over 80%
+  assert:
+    that: "{{ item[0] | int < 80 }}" #Variabilize the threshold percentage
+    quiet: yes
+  loop: "{{ node_list_cpu }}"
+  loop_control:
+    label: "{{ item[1] }}"

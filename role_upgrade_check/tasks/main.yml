@@ -1,0 +1,29 @@
+---
+# tasks file for role_upgrade_check
+- import_tasks: verify_upgrade_path.yml
+  tags:
+    - verify_upgrade_path 
+
+- import_tasks: obtain_openshift_auth.yml
+  tags:
+    - obtain_openshift_auth
+
+- import_tasks: verify_openshift_components.yml
+  tags:
+    - verify_openshift_components
+
+- import_tasks: verify_prometheus_alerts.yml
+  tags:
+    - verify_prometheus_alerts
+
+- import_tasks: verify_resources_consumption.yml
+  tags:
+    - verify_resources_consumption
+
+- import_tasks: verify_api_deprecation.yml
+  tags:
+    - verify_api_deprecation
+
+- import_tasks: revoke_openshift_auth.yml
+  tags:
+    - revoke_openshift_auth

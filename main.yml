@@ -1,0 +1,21 @@
+---
+- name: yay
+  hosts: localhost
+  module_defaults:
+  - redhat.openshift.openshift_auth:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  - kubernetes.core.k8s_info:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  - kubernetes.core.k8s:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  - kubernetes.core.k8s_exec:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+
+  tasks:
+  - name: Test role
+    include_role:
+      name: role_upgrade_check

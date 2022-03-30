@@ -1,0 +1,7 @@
+---
+# defaults file for role_upgrade_check
+role_upgrade_channel_name: fast-4.3
+role_upgrade_channel_version: 4.2.18 
+
+role_upgrade_openshift_url: "https://api.cluster-z697b.z697b.sandbox507.opentlc.com:6443" 
+role_upgrade_validate_k8s_certs: "no"
