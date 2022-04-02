@@ -1,0 +1,63 @@
+---
+- name: Check the upgrade path for your OpenShift version
+  block:
+  - name: Retrieve the raw informations before processing them
+    uri:
+      url: "https://api.openshift.com/api/upgrades_info/v1/graph?channel={{ role_upgrade_channel_name }}"
+      headers:
+        Content-Type: application/json
+      validate_certs: no
+    register: role_upgrade_info
+    no_log: True
+ 
+  - name: Retrieve the channel list and the current version of the cluster in the raw datas
+    set_fact:
+      channels_list: "{{ item.metadata['io.openshift.upgrades.graph.release.channels'] }}"
+      version_list: "{{ version_list | default([]) + [item.version == cv.resources[0].status.history[0].version] }}"
+    with_items: "{{ role_upgrade_info.json.nodes }}"
+    no_log: True
+
+  - name: Retrieve the index number of the starting entry corresponding to our current version
+    set_fact:
+      index_version: "{{ lookup('ansible.utils.index_of', version_list, 'eq', true) | int }}"
+    no_log: True
+
+  - name: Correlate the edges with the starting version
+    set_fact:
+      edges_correlation: "{{ edges_correlation | default([]) +[item[1]] }}"
+    loop: "{{ role_upgrade_info.json.edges }}"
+    when:  item[0] | string == index_version
+    no_log: True
+  
+  - name: Retrieve the version based on the previous edge correlation
+    set_fact:
+      version_path: "{{ (version_path | default([]) + [role_upgrade_info.json.nodes[item].version]) | sort }}"
+    with_items: "{{ edges_correlation }}"
+    no_log: True
+
+  - assert:
+      that: ocp_version in version_path
+
+  - name: Upgrade Path Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: " "
+      insertafter: "######################### Upgrade Path #########################"
+      block: |
+
+           Desired version is in upgrade path
+    delegate_to: localhost
+    no_log: True
+
+  rescue:
+  - name: Upgrade Path Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: " "
+      insertafter: "######################### Upgrade Path #########################"
+      block: |
+
+           Desired version not in upgrade path: {{ version_path }}
+    delegate_to: localhost
+    no_log: True
+    failed_when: true

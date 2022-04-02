@@ -1,0 +1,32 @@
+devclusters:
+  hosts:
+    clustername1:
+      ansible_connection: local
+      role_openshift_upgrade_check_api: {{ insert api here }}
+      role_openshift_upgrade_check_validate_certs: {{ insert yes or no here to specify wether to validate certificates }}
+      type: {{ insert the type of check. It can be full_upgrade, pre_check or post_check }}
+      full_run: {{ set true to stop at the first error and false for the plabook to continue witherrors }}
+      ocp_version: {{ specify the version you want to upgrade the cluster to }}
+      snow: {{ set to true to connect to service now and create incidents when the checks fail }} 
+      role_upgrade_channel_name: {{ specify the upgrade channel }}
+ prodclusters:
+  hosts:
+    clustername2:
+      ansible_connection: local
+      role_openshift_upgrade_check_api: {{ insert api here }}
+      role_openshift_upgrade_check_validate_certs: {{ insert yes or no here to specify wether to validate certificates }}
+      type: {{ insert the type of check. It can be full_upgrade, pre_check or post_check }}
+      full_run: {{ set true to stop at the first error and false for the plabook to continue witherrors }}
+      ocp_version: {{ specify the version you want to upgrade the cluster to }}
+      snow: {{ set to true to connect to service now and create incidents when the checks fail }} 
+      role_upgrade_channel_name: {{ specify the upgrade channel }}
+    clustername3:
+      ansible_connection: local
+      role_openshift_upgrade_check_api: {{ insert api here }}
+      role_openshift_upgrade_check_validate_certs: {{ insert yes or no here to specify wether to validate certificates }}
+      type: {{ insert the type of check. It can be full_upgrade, pre_check or post_check }}
+      full_run: {{ set true to stop at the first error and false for the plabook to continue witherrors }}
+      ocp_version: {{ specify the version you want to upgrade the cluster to }}
+      snow: {{ set to true to connect to service now and create incidents when the checks fail }} 
+      role_upgrade_channel_name: {{ specify the upgrade channel }}
+ 

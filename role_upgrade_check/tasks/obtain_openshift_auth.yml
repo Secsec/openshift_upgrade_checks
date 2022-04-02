@@ -1,0 +1,14 @@
+---
+  - name: Retrieve OpenShift credentials
+    include_vars: "{{ role_path }}/defaults/openshift_credentials.yml"
+# This no_log tag is here for security purposes ( to protect your credentials) Please do not remove this tag.
+# If this tasks fails is due to the file not being configured properly or in the wrong location
+    no_log: True
+
+  - name: Log in (obtain access token)
+    redhat.openshift.openshift_auth:
+      username: "{{ role_upgrade_check_openshift_username }}"
+      password: "{{ role_upgrade_check_openshift_password }}"
+    register: openshift_auth_results
+# Please do not remove the no_log tag. This is here for security puposes 
+    no_log: True

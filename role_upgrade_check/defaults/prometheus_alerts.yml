@@ -1,0 +1,31 @@
+---
+role_prometheus_alerts:
+  - etcdMembersDown 
+  - KubeDeploymentReplicasMismatch 
+  - ClusterOperatorDown
+  - MachineWithNoRunningPhase
+  - ClusterOperatorDegraded
+  - CannotRetrieveUpdates
+  - ClusterNotUpgradeable
+  - ClusterOperatorFlapping
+  - CoreDNSErrorsHigh
+  - CoreDNSPanicking
+  - etcdExcessiveDatabaseGrowth
+  - etcdHighNumberOfLeaderChanges
+  - HighOverallControlPlaneCPU
+  - IngressControllerDegraded
+  - IngressControllerUnavailable
+  - KubeClientErrors
+  - KubeContainerWaiting
+  - KubeCPUOvercommit
+  - KubeDaemonSetNotScheduled
+  - KubeDaemonSetRolloutStuck
+  - KubeMemoryOvercommit
+  - KubeNodeReadinessFlapping
+  - KubeNodeUnreachable
+  - NodeNetworkReceiveErrs
+  - NodeNetworkTransmitErrs
+  - NodeWithoutSDNPod
+  - SDNPodNotReady
+  - KubeletTooManyPods
+

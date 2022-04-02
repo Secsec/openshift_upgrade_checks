@@ -1,0 +1,4 @@
+- name: Upgrade Openshift cluster
+  shell: |
+    oc login --token={{ openshift_auth_results.openshift_auth.api_key }} --server={{ role_openshift_upgrade_check_api }} --insecure-skip-tls-verify
+    oc adm upgrade --to={{ ocp_version }}

@@ -1,0 +1,61 @@
+- name: Verfify CO
+  block:
+  - name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: Route
+      name: prometheus-k8s
+      namespace: openshift-monitoring
+    register: monitoring_routes
+    no_log: True
+
+  - name: Set the prometheus URL
+    set_fact:
+      role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
+    no_log: True
+
+  - name: Retrieve Cluster Operators
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=cluster_operator_conditions"
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: co_result
+    no_log: True
+ 
+  - set_fact:
+      co: "{{ co_result | json_query('json.data.result') }}"
+    no_log: True
+
+  - set_fact:
+      co_list: "{{ co_list | default([]) + [[item | json_query('metric.name'), item | json_query('metric.condition'), item | json_query('metric.reason') , item | json_query('value[1]')]] }}"
+    loop: "{{ co }}"
+    no_log: True
+
+  - set_fact:
+      msg: "{% for item in co_list %} {% if item[1]==\"Degraded\" and item[3]==\"1\"%} Cluster Operator {{ item[0] }} is in state {{ item[1] }} with the reason {{ item[2] }} \n   {% endif %} {% endfor %}"
+      name: "CO Check"
+      tname: "Cluster Operator Check"
+    no_log: True
+
+  - assert:
+      that: item[1]!="Degraded"
+    loop: "{{ co_list }}"
+    when: item[3]=="1"
+    
+  - name: Cluster Operator Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "               "
+      insertafter: "######################### CO Check #########################"
+      block: |
+
+         Cluster Operator Check Passed
+    delegate_to: localhost
+    no_log: True
+  
+
+  

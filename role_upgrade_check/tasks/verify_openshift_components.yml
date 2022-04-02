@@ -1,0 +1,285 @@
+---
+- name: Verfify Node Health State
+  block:
+  - name: Retrieve all Nodes
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: Node
+    register: node_list
+    no_log: True
+  
+  - set_fact:
+      msg: "{% for item in node_list.resources %} Node {{ item.metadata.name }} Health Check Status: \n  Network Unavailable condition: {{ item.item.status.conditions[0].status }}  \n Memory pressure condition: {{ item.status.conditions[1].status }} \n Disk pressure condition: {{ item.status.conditions[2].status }} \n PID pressure condition: {{ item.status.conditions[3].status }} \n Node is Ready: {{ item.status.conditions[4].status }} \n {% endfor %}"
+      name: "Node Health Check"
+      tname: "Node Health Check"
+    no_log: True
+
+  - name: Assert that nodes healthchecks are passing
+    assert:
+      quiet: yes
+      that:
+        - "{{ item.status.conditions[0].status == 'False' }}" #NetworkUnavailable
+        - "{{ item.status.conditions[1].status == 'False' }}" ##MemoryPressure
+        - "{{ item.status.conditions[2].status == 'False' }}" #DiskPressure
+        - "{{ item.status.conditions[3].status == 'False' }}" #PIDAvailable
+        - "{{ item.status.conditions[4].status == 'True' }}" #Kubelet Status Ready
+      fail_msg: "The Node Health Check failed. Please review the node conditions"
+      success_msg: "The Node is Healthy"
+    with_items: "{{ node_list.resources }}"
+    register: result
+    no_log: True
+
+  - name: Node Health Check Results
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "                                          "
+      insertafter: "######################### Node Health Check #########################"
+      block: |
+        Node Health Check was Successful
+    delegate_to: localhost
+    no_log: True
+
+- name: Verify Pods Health State
+  block:
+  - name: Retrieve all non running pods (bad state)
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: Pod
+      field_selectors:
+        - status.phase!=Running
+        - status.phase!=Completed
+        - status.phase!=Succeeded
+    register: unhealthy_pods
+    no_log: True
+  
+  - set_fact:
+      msg: "{% for item in unhealthy_pods.resources %} Pod {{ item.metadata.name }}/{{ item.metadata.namespace }} is in state {{ item.status.phase }}. Verify the pods logs \n {% endfor %}"
+      name: "Pod Health Check"
+      tname: "Pod Health Check"
+    no_log: True
+
+# Pod Health Check Verification 
+  - name: Assert that there are no unhealthy pods
+    assert:
+      that:
+        - "{{ unhealthy_pods.resources | length == 0 }}"
+    with_items: "{{ unhealthy_pods.resources }}"
+    no_log: True
+    when: item.metadata.namespace.startswith('openshift') or item.metadata.namespace.startswith('kube') or item.metadata.namespace.startswith('calico') or item.metadata.namespace.startswith('tigera')
+
+  - name: Pod Health Check Results
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "        "
+      insertafter: "######################### Pod Health Check #########################"
+      block: |
+        Pod Health Check was Successful
+    delegate_to: localhost
+    no_log: True
+- name: Verify Pods Health State - Restart count 
+  block:
+  - name: Retrieve list of Running pods for high restart count
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: Pod
+      field_selectors:
+        - status.phase==Running
+    register: pod_list_high_restart
+    no_log: True
+
+  - set_fact:
+      msg: "{% for item in pod_list_high_restart.resources %} {% if item | json_query('[].status.containerStatuses[].restartCount') | int > 3 %}  The pod {{ item.metadata.name }} has restarted more than 3 times. \n {% endif %} {% endfor %}"
+      name: "Pod Health Check"
+      tname: "Pod Health Check"
+    no_log: True
+
+# Pod Restart Check Verification  
+  - name: Check that there are no pods with a high restart count
+    assert:
+      that:
+        - "{{ item | json_query('[].status.containerStatuses[].restartCount') | int }} < 3" #Variable for role can be replaced here
+      quiet: true
+    loop: "{{ pod_list_high_restart.resources }}"
+    no_log: True
+    when: item.metadata.namespace.startswith('openshift') or item.metadata.namespace.startswith('kube')
+
+  - name: High Restart Count Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "         "
+      insertafter: "######################### Pod Health Check Restart #########################"
+      block: |
+       
+         The Pod Restart check passed: no configuration pod has a high restart count .
+
+    delegate_to: localhost
+    no_log: True
+
+- name: Verify Pending CSRs
+  block:
+  - name: Retrieve pending CSRs
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: CertificateSigningRequest
+    register: csr
+    no_log: True
+
+  - set_fact:
+      msg: "{% for item in csr.resources %} {% if item.status.conditions[0].status != 'True' %} There are pending CSR. \n {% endif %} {% endfor %}"
+      name: "Pending CSR"
+      tname: "Pending CSR"
+    no_log: True
+
+# CSR Check Verification   
+  - name: Assert that there are not pending CSRs
+    assert:
+      that:
+        - "{{ item.status.conditions[0].status == 'True' }}" #Approved
+    with_items: "{{ csr.resources }}"
+    no_log: True
+
+  - name: Pending CSR Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "           "
+      insertafter: "######################### Pending CSR #########################"
+      block: |
+                CSR Check Passed.
+
+    delegate_to: localhost
+    no_log: True
+
+- name: Test resolving kubernetes service hostname to and from every DNS pod
+  block:
+    - name: Retrieve DNS pods
+      kubernetes.core.k8s_info:
+        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+        kind: Pod
+        namespace: openshift-dns
+      register: dns_pods
+      no_log: True
+
+    - name: Create a convenient list for checking DNS entries
+      set_fact:
+        dns_pods_convenient: "{{ dns_pods_convenient | default([]) + [[item | json_query('metadata.name'),item | json_query('status.podIP')]] }}"
+      loop: "{{ dns_pods.resources }}"
+      no_log: True
+
+    - name: Execute the DNS lookup
+      kubernetes.core.k8s_exec:
+        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+        namespace: "openshift-dns"
+        pod: "{{ item[0] }}"
+        container: dns
+        command: "dig @{{ item[1] }} kubernetes.default.svc.cluster.local -p 5353 +short"
+      register: dns_result
+      loop: "{{ dns_pods_convenient }}"
+      when: item[0].startswith('dns')
+
+    - set_fact:
+        msg: "{% for item in dns_result.results %} {% if item.stdout!=\"\" %} Failed to resolve the Kubernetes API from the DNS pod: {{ item.item[0] }} \n {% endif %} {% endfor %}"
+        name: "DNS CHECK"
+        tname: "DNS CHECK"
+      no_log: True
+
+# DNS Check Verification
+    - name: Assert that DNS Check Passes
+      assert:
+        that:
+          - item.stdout!=""
+      with_items: "{{ dns_result.results }}"
+      when: "'stdout' in item" 
+
+    - name: DNS Result
+      blockinfile:
+        path: "{{ result_file }}"
+        marker: "            "
+        insertafter: "######################### DNS CHECK  #########################"
+        block: |
+
+           DNS Check Passed.
+
+      delegate_to: localhost
+      no_log: True
+
+- name: Check if there are any PDBs that can prevent node from being drained during an update
+  block:
+    - name: Retrieve all the PDBs
+      kubernetes.core.k8s_info:
+        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+        api_version: "policy/v1beta1" 
+        kind: PodDisruptionBudget
+      register: pdbs
+      no_log: True
+
+    - name: Format the PDBs in a convenient way prior checking
+      set_fact:
+        pdbs_convenient: "{{ pdbs_convenient | default([]) + [[item | json_query('metadata.name'), item | json_query('metadata.namespace'), item | json_query('spec.maxUnavailable'), item | json_query('spec.minAvailable'), item | json_query('status.expectedPods')]] }}"
+ #[Name,  Namespace  maxUnavailable, minUnavailable, expectedPods] 
+      loop: "{{ pdbs.resources }}"
+      no_log: True
+
+    - set_fact:
+        msg: "{% for item in pdbs_convenient %} {% if (item[2] | int < 1) or (item[2] ==  '0%') or (item[3] | int > item[4] | int) or (item[3] == '100%') %}  Check PDB item[0]/item[1] \n {% endif %} {% endfor %}"
+        name: "PDB Check"
+        tname: "PDB Check"
+      no_log: True
+
+# PDB Check Verification
+    - name: Assert that PDBs are correct
+      assert:
+        that:
+          - "{{ (item[2] | int > 1) or (item[2] !=  '0%')  }}" # max unavailable minimum to 2
+          - "{{ (item[3] | int < item[4] | int) or (item[3] != '100%') }}" # min unavailable can not be inferior to expected pods
+        fail_msg: "The PDB needs to be reviewed. It will stop the upgrade from running successfully"
+        success_msg: "The PDB is correct"      
+      loop: "{{ pdbs_convenient }}"
+      register: result_pdb
+
+    - name: PDB Result
+      blockinfile:
+        path: "{{ result_file }}"
+        marker: "             "
+        insertafter: "######################### PDB Check #########################"
+        block: |
+
+         PDB Check Passed 
+
+      delegate_to: localhost
+      no_log: True
+  when: type=="pre_check" 
+
+- name: Verify MCP Events
+  block:
+  - name: Retrieve MCP warning events
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: Event
+      field_selectors:
+        - involvedObject.kind=MachineConfigPool
+        - type=Warning 
+    register: mcp_events
+    no_log: True
+
+  - set_fact:
+      msg: "{% for item in mcp_events.resources %} The following MacineConfigPool Events were found --> {{ item.message }} \n {% endfor %}"
+      name: "MCP Event Checkk"
+      tname: "MCP Event Check"
+    no_log: True
+
+  - name: Assert there are no Warning MCP events
+    assert:
+      that:
+        - "mcp_events.resources | length == 0" 
+
+  - name: MCP Events result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "      "
+      insertafter: "######################### MCP Event Check #########################"
+      block: |
+      
+            MacineConfigPool Events Check Passed 
+
+    delegate_to: localhost
+    no_log: True

@@ -1,0 +1,5 @@
+---
+# defaults file for role_upgrade_check
+role_upgrade_channel_name: stable-4.7
+role_upgrade_channel_version: 4.6.39 
+

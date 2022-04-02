@@ -1,0 +1,213 @@
+---
+- name: Verify Node CPU Consumption
+  block:
+  - name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: Route
+      name: prometheus-k8s
+      namespace: openshift-monitoring
+    register: monitoring_routes
+    no_log: True
+ 
+  - name: Set the prometheus URL
+    set_fact:
+      role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
+    no_log: True
+
+  - name: Retrieve Node CPU utilization
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance:node_cpu_utilisation:rate1m*100" 
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_loadcpu
+    no_log: True
+
+  - set_fact:
+      payload_cpu: "{{ payload_loadcpu | json_query('json.data.result') }}"
+    no_log: True
+
+  - set_fact:
+      node_list_cpu: "{{ node_list_cpu | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_cpu }}"
+    no_log: True
+
+  - assert:
+      that: "{{ item[0] | int < 80 }}"
+    loop: "{{ node_list_cpu }}"
+
+  - name: Node CPU utilisation Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "   "
+      insertafter: "######################### Node CPU Utilisation Check #########################"
+      block: |
+
+         Node CPU utilisation check passed
+    delegate_to: localhost
+    no_log: True
+
+  rescue:
+  - name: Node CPU utilisation Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "   "
+      insertafter: "######################### Node CPU Utilisation Check #########################"
+      block: |
+
+         Node {{ item[1] }} CPU Usage %: {{ item[0] }} is too high
+    delegate_to: localhost
+    loop: "{{ node_list_cpu }}"
+    no_log: True
+  
+  - name: Create an incident 
+    snow_record:
+      state: present
+      username: "{{ role_upgrade_check_snow_username }}"
+      password: "{{ role_upgrade_check_snow_password }}"
+      instance: "{{ role_upgrade_check_snow_instance }}"
+      data:
+        severity: 2
+        priority: 2
+        short_description: "Ansible Upgrade {{ type }} failed: Verify Node CPU Consumption"
+        work_notes: "{{ lookup('file', result_file) }}"
+    register: new_incident
+    failed_when: true  
+    when: "{{ snow }}"
+
+- name: Verify Node Memory Consumption
+  block:
+  - name: Retrieve Node Memory utilization
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance:node_memory_utilisation:ratio*100" 
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_loadmem
+    no_log: True
+
+  - set_fact:
+      payload_mem: "{{ payload_loadmem | json_query('json.data.result') }}"
+    no_log: True
+
+  - set_fact:
+      node_list_mem: "{{ node_list_mem | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_mem }}"
+    no_log: True
+
+  - assert:
+      that: "{{ item[0] | int < 80 }}"
+    loop: "{{ node_list_mem }}"
+
+  - name: Node Memory utilisation Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "    "
+      insertafter: "######################### Node Memory Utilisation Check #########################"
+      block: |
+         Node Memory utilisation check passed
+
+    delegate_to: localhost
+    no_log: True
+
+  rescue:
+  - name: Node Memory utilisation Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "    "
+      insertafter: "######################### Node Memory Utilisation Check #########################"
+      block: |
+
+         Node {{ item[1] }} Memory Usage %: {{ item[0] }} is too high
+    delegate_to: localhost
+    loop: "{{ node_list_mem }}"
+    no_log: True
+
+  - name: Create an incident 
+    snow_record:
+      state: present
+      username: "{{ role_upgrade_check_snow_username }}"
+      password: "{{ role_upgrade_check_snow_password }}"
+      instance: "{{ role_upgrade_check_snow_instance }}"
+      data:
+        severity: 2
+        priority: 2
+        short_description: "Ansible Upgrade {{ type }} failed: Verify Node Memory Consumption"
+        work_notes: "{{ lookup('file', result_file) }}"
+    register: new_incident
+    failed_when: "{{ full_run }}"  
+    when: "{{ snow }}" 
+
+- name: Verify Node Disk Consumption
+  block:
+  - name: Retrieve Node Disk utilization
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance_device:node_disk_io_time_seconds:rate1m*100"
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_loaddisk
+    no_log: True
+
+  - set_fact:
+      payload_disk: "{{ payload_loaddisk | json_query('json.data.result') }}"
+    no_log: True
+ 
+  - set_fact:
+      node_list_disk: "{{ node_list_disk | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_disk }}"
+    no_log: True
+  
+  - assert:
+      that: "{{ item[0] | int < 80 }}"
+    loop: "{{ node_list_disk }}"
+
+  - name: Node Disk utilisation Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "  "
+      insertafter: "######################### Node Disk Utilisation Check #########################"
+      block: |
+
+         Node Disk Usage Check passed
+    delegate_to: localhost
+    no_log: True
+
+  rescue:
+  - name: Node Disk utilisation Result
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "  "
+      insertafter: "######################### Node Disk Utilisation Check #########################"
+      block: |
+
+         Node {{ item[1] }} Disk Usage %: {{ item[0] }} is too high
+    delegate_to: localhost
+    loop: "{{ node_list_disk }}"
+    no_log: True
+  
+  - name: Create an incident 
+    snow_record:
+      state: present
+      username: "{{ role_upgrade_check_snow_username }}"
+      password: "{{ role_upgrade_check_snow_password }}"
+      instance: "{{ role_upgrade_check_snow_instance }}"
+      data:
+        severity: 2
+        priority: 2
+        short_description: "Ansible Upgrade {{ type }} failed: Verify Node Disk Consumption"
+        work_notes: "{{ lookup('file', result_file) }}"
+    register: new_incident
+    failed_when: "{{ full_run }}"
+    when: "{{ snow }}"
+

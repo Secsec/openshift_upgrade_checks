@@ -1,0 +1,48 @@
+---
+- name: Verfify Cluster Version
+  block:
+  - name: Retrieve Cluster Version
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: ClusterVersion
+      name: version
+    register: cv
+    #no_log: True
+    until: cv.resources[0].status.conditions[1].status=="True" or cv.resources[0].status.conditions[2].status=="False"
+    retries: 80
+    delay: 120
+# Check if FAILED output can be changed.. 
+    
+  - name: Cluster Version Check Results
+    blockinfile:
+      path: "{{ result_file }}"
+      marker: "                "
+      insertafter: "######################### Cluster Version Check #########################"
+      block: |
+        Upgrade is failing with reason: 
+
+           {{ cv.resources[0].status.conditions[1].reason }}: {{ cv.resources[0].status.conditions[1].message }}
+
+        Please follow the upgrade troubleshooting guide to troubleshoot the Upgrade. If the failing mark disapears please continue to relaunch the checks
+
+    delegate_to: localhost
+    when: cv.resources[0].status.conditions[1].status=="True"
+    failed_when: cv.resources[0].status.conditions[1].status=="True"
+    no_log: True
+
+  rescue:
+  - name: Create an incident 
+    snow_record:
+      state: present
+      username: "{{ role_upgrade_check_snow_username }}"
+      password: "{{ role_upgrade_check_snow_password }}"
+      instance: "{{ role_upgrade_check_snow_instance }}"
+      data:
+        severity: 3
+        priority: 3
+        short_description: "Ansible Upgrade {{ type }} failed for cluster {{inventory_hostname}}: Upgrade is in Failing state"
+        work_notes: "{{ lookup('file', result_file) }}"
+    register: new_incident
+    failed_when: "{{ full_run }}"
+    when: "{{ snow }}"
+

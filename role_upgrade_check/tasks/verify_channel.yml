@@ -1,0 +1,22 @@
+---
+- name: Verfify Cluster Update Channel
+  block:
+  - name: Retrieve Cluster Version
+    kubernetes.core.k8s_info:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      kind: ClusterVersion
+      name: version
+    register: cv
+    no_log: true
+    
+  - name: Assert specified channel is correct
+    assert:
+      that:
+        - "{{ cv.resources[0].spec.channel == role_upgrade_channel_name }}"
+    no_log: True
+    
+  rescue:
+  - name: Change Channel
+    shell: |
+       oc login --token={{ openshift_auth_results.openshift_auth.api_key }} --server={{ role_openshift_upgrade_check_api }} --insecure-skip-tls-verify
+       oc patch clusterversion version --type json -p '[{"op": "add", "path": "/spec/channel", "value": "{{ role_upgrade_channel_name }}"}]'

@@ -1,0 +1,27 @@
+---
+  - name: Set file destination
+    set_fact:
+      result_file: "{{ playbook_dir }}/results/ocp_{{ type }}_result_report_{{inventory_hostname}}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.txt"
+  - name: Creating a file with content
+    copy:
+      dest: "{{ result_file }}"
+      content: |
+      
+        {% if type=="pre_check" %}######################### Upgrade Path #########################{% endif %}
+
+        {% if type=="post_check" %}######################### Cluster Version Check #########################{% endif %}       
+        {% if type=="pre_check" %}######################### PDB Check #########################{% endif %}
+
+        ######################### MCP Check #########################
+        ######################### CO Check #########################
+        ######################### Node Health Check #########################
+        ######################### Pod Health Check #########################
+        ######################### Pod Health Check Restart #########################
+        ######################### DNS CHECK  #########################
+        ######################### Pending CSR #########################        
+        ######################### MCP Event Check #########################
+        ######################### Alert Health Check #########################
+        {% if type=="pre_check" %}######################### Node CPU Utilisation Check #########################{% endif %}
+        {% if type=="pre_check" %}######################### Node Memory Utilisation Check #########################{% endif %}
+        {% if type=="pre_check" %}######################### Node Disk Utilisation Check #########################{% endif %}
+    delegate_to: localhost

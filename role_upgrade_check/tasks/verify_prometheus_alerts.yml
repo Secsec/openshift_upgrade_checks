@@ -1,0 +1,87 @@
+---
+- name: Include the list of alerts to be checked
+  include_vars: "{{ role_path }}/defaults/prometheus_alerts.yml"
+  no_log: True
+
+- name: Verify OpenShift Alerts
+  block:
+    - name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
+      kubernetes.core.k8s_info:
+        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+        kind: Route
+        name: prometheus-k8s
+        namespace: openshift-monitoring
+      register: monitoring_routes
+      no_log: True
+
+    - name: Set the prometheus URL
+      set_fact:
+        role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
+      no_log: True
+
+    - name: Retrieve the alerts from prometheus
+      uri:
+        url:  "https://{{ role_prometheus_url[0] }}/api/v1/alerts"
+        method: GET
+        headers:
+          Content-Type: application/json
+          Accept: application/json
+          Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+        validate_certs: no
+      register: payload
+      no_log: True
+
+    - name: Retrieve alerts before assessing them on criterias
+      set_fact:
+        role_alerts: "{{ payload | json_query('json.data.alerts') }}"
+      no_log: True
+    
+    - name: Check if any alerts from the alert list is present
+      assert:
+        that: 
+        - item[0].labels.alertname != item[1]
+        - item[0].labels.severity != "critical" 
+      with_nested:
+      - "{{ role_alerts }}"
+      - "{{ role_prometheus_alerts }}"
+
+    - name: Alerts Status Result
+      blockinfile:
+        path: "{{ result_file }}"
+        marker: "     "
+        insertafter: "######################### Alert Health Check #########################"
+        block: |
+             Alert Check Passed 
+          
+      delegate_to: localhost
+      no_log: True
+
+  rescue:
+    - name: Alerts Status Result
+      blockinfile:
+        path: "{{ result_file }}"
+        marker: "     "
+        insertafter: "######################### Alert Health Check #########################"
+        block: |
+
+          {{ item[0].annotations.message }}
+      delegate_to: localhost
+      with_nested:
+      - "{{ role_alerts }}"
+      #no_log: True
+
+    - name: Create an incident 
+      snow_record:
+        state: present
+        username: "{{ role_upgrade_check_snow_username }}"
+        password: "{{ role_upgrade_check_snow_password }}"
+        instance: "{{ role_upgrade_check_snow_instance }}"
+        data:
+          severity: 2
+          priority: 2
+          short_description: "Ansible Upgrade {{ type }} failed: Assert that no critical alerts are firing"
+          work_notes: "{{ lookup('file', result_file) }}"
+      register: new_incident
+      failed_when: "{{ full_run }}" 
+      when: "{{ snow }}"
+

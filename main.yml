@@ -1,0 +1,67 @@
+---
+- name: ocp-upgrade-checks
+  hosts: all
+  serial: 1 # Document it 
+  module_defaults:
+  - redhat.openshift.openshift_auth:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  - kubernetes.core.k8s_info:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  - kubernetes.core.k8s:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  - kubernetes.core.k8s_exec:
+      host: "{{ role_openshift_upgrade_check_api }}"
+      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+      
+  tasks:
+  - block:
+    - name: Upgrade Check Role
+      include_role:
+        name: role_upgrade_check
+      when: type!="full_upgrade"
+    
+    - set_fact:
+        full_upgrade: yes
+      when: type=="full_upgrade"
+
+    - name: Run pre-checks
+      include_role:
+        name: role_upgrade_check
+      vars: 
+        type: pre_check
+      when: full_upgrade
+
+    - name: Run post-checks
+      include_role:
+        name: role_upgrade_check
+      vars: 
+        type: post_check
+      when: full_upgrade
+    rescue:
+    - name: Result to file
+      blockinfile:
+        path: "{{ result_file }}"
+        marker: "               "
+        insertafter: "######################### {{ name }} #########################"
+        block: |
+
+            "{{ name }}: {{ msg }}"
+      no_log: True
+
+    - name: Create an incident 
+      snow_record:
+        state: present
+        username: "{{ role_upgrade_check_snow_username }}"
+        password: "{{ role_upgrade_check_snow_password }}"
+        instance: "{{ role_upgrade_check_snow_instance }}"
+        data:
+          severity: 2
+          priority: 2
+          short_description: "Ansible Upgrade {{ type }} failed for cluster {{inventory_hostname}}: {{ tname }}  "
+          work_notes: "{{ lookup('file', result_file) }} \n \n  Failed task logs:\n {{ ansible_failed_result }}"
+      register: new_incident
+      failed_when: "{{ full_run }}"
+      when: "{{ snow }}"

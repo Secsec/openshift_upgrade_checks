@@ -1,0 +1,5 @@
+kubernetes
+jmespath
+requests
+requests-oauthlib
+pysnow

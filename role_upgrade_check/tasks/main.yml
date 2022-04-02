@@ -1,0 +1,57 @@
+---
+
+# tasks file for role_upgrade_check
+
+- import_tasks: obtain_openshift_auth.yml
+  tags:
+    - obtain_openshift_auth
+
+- import_tasks: create_report.yml
+  tags:
+    - create_report
+
+- import_tasks: verify_channel.yml
+  tags:
+    - verify_channel
+  when: type=="pre_check"
+
+- import_tasks: verify_upgrade_path.yml
+  tags:
+    - verify_upgrade_path
+  when: type=="pre_check"
+
+- import_tasks: upgrade_cluster.yml
+  tags:
+    - upgrade_cluster
+  when: type=="post_check" # only for full_run
+
+- import_tasks: verify_clusterversion.yml 
+  tags:
+    - verify_clusterversion
+  when: type=="post_check" 
+
+- import_tasks: verify_co.yml
+  tags:
+    - verify_co
+
+- import_tasks: verify_mcp.yml
+  tags:
+    - verify_mcp
+
+- import_tasks: verify_openshift_components.yml
+  tags:
+    - verify_openshift_components
+  
+- import_tasks: verify_prometheus_alerts.yml
+  tags:
+    - verify_prometheus_alerts
+
+- import_tasks: verify_resources_consumption.yml
+  tags:
+    - verify_resources_consumption
+  when: type=="pre_check"
+
+- import_tasks: revoke_openshift_auth.yml
+  tags:
+    - revoke_openshift_auth
+    

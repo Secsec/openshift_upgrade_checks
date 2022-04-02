@@ -1,0 +1,6 @@
+---
+  - name: Revoke token
+    redhat.openshift.openshift_auth:
+      api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+      state: absent
+
