@@ -27,3 +27,7 @@
 - import_tasks: revoke_openshift_auth.yml
   tags:
     - revoke_openshift_auth
+
+- import_tasks: verify_etcd_performance.yml
+  tags:
+    - verify_etcd_performance

@@ -1,0 +1,20 @@
+---
+# vars file for backup_etcd
+etcd_check_from: 1h
+
+etcd_backend_commit_duration_min_ratio: 1
+etcd_backend_commit_duration_lower_bound: 0.5
+etcd_backend_commit_query: 'sum_over_time(count(histogram_quantile(0.99, avg by (le) (irate(etcd_disk_backend_commit_duration_seconds_bucket[5m]))) > {{ etcd_backend_commit_duration_lower_bound }} )[{{ etcd_check_from }}:]) / sum_over_time(vector(1)[{{ etcd_check_from }}:])'
+
+etcd_disk_wal_fsync_duration_min_ratio: 1
+etcd_disk_wal_fsync_duration_lower_bound: 0.5
+etcd_disk_wal_fsync_duration_query: 'sum_over_time(count(histogram_quantile(0.99, avg by (le) (irate(etcd_disk_wal_fsync_duration_seconds_bucket[5m]))) > {{ etcd_disk_wal_fsync_duration_lower_bound }} )[{{ etcd_check_from }}:]) / sum_over_time(vector(1)[{{ etcd_check_from }}:])'
+
+etcd_cpu_io_wait_min_ratio: 0.5
+etcd_cpu_io_wait_lower_bound: 6
+etcd_cpu_io_wait_query: 'sum_over_time(group(avg by (le)((sum(irate(node_cpu_seconds_total {mode="iowait"} [2m])) without (cpu)) / count(node_cpu_seconds_total) without (cpu) * 100 AND on (instance) label_replace( kube_node_role{role="master"}, "instance", "$1", "node", "(.+)" )) > {{ etcd_cpu_io_wait_lower_bound }})[{{ etcd_check_from }}:]) / sum_over_time(vector(1)[{{ etcd_check_from }}:])'
+
+
+etcd_network_peer_round_trip_time_min_ratio: 0.2
+etcd_network_peer_round_trip_time_lower_bound: 0.5
+etcd_network_peer_round_trip_time_query: 'sum_over_time(count(histogram_quantile(0.99, avg by (le) (irate(etcd_network_peer_round_trip_time_seconds_bucket[5m]))) > {{ etcd_network_peer_round_trip_time_lower_bound }} )[{{ etcd_check_from }}:]) / sum_over_time(vector(1)[{{ etcd_check_from }}:])'
