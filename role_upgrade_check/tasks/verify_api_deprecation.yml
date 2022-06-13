@@ -32,7 +32,6 @@
       fail_msg: 
         - "{{ item[0] }} API was called {{ item[1] }} times over the last hour and {{ item[2] }} over the last 24h."
         - "Please investigate using the following command : oc get apirequestcounts {{ item[0] }} -o jsonpath='{range .status.currentHour..byUser[*]}{..byVerb[*].verb}{\",\"}{.username}{\",\"}{.userAgent}{\"\n\"}{end}' | sort -k 2 -t, -u | column -t -s, -NVERBS,USERNAME,USERAGENT"
-      
     loop: "{{ deprecatedapi_convenient }}"
     loop_control:
       label: "{{ item[0] }}"

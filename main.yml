@@ -16,4 +16,5 @@
       validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
 
   roles:
-  - role: role_upgrade_check
+  - name: Test role
+    role: role_upgrade_check

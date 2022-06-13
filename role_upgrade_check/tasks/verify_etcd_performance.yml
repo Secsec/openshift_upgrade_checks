@@ -13,7 +13,6 @@
 - name: Set the prometheus URL
   set_fact:
     role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
-  no_log: True
 
 - name: Retrieve exceed backend_commit_duration
   uri:
@@ -23,7 +22,7 @@
       Content-Type: application/json
       Accept: application/json
       Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: no
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
   register: etcd_backend_commit_duration_result
 
 - set_fact:
@@ -47,9 +46,8 @@
       Content-Type: application/json
       Accept: application/json
       Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: no
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
   register: etcd_disk_wal_fsync_duration_result
-  no_log: True
 
 - set_fact:
     etcd_disk_wal_fsync_duration_data: "{{ etcd_disk_wal_fsync_duration_result | json_query('json.data.result') }}"
@@ -72,7 +70,7 @@
       Content-Type: application/json
       Accept: application/json
       Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: no
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
   register: etcd_cpu_io_wait_result
 
 - set_fact:
@@ -96,7 +94,7 @@
       Content-Type: application/json
       Accept: application/json
       Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: no
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
   register: etcd_network_peer_round_trip_time_result
 
 - set_fact:

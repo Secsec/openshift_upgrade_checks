@@ -19,7 +19,7 @@
       Content-Type: application/json
       Accept: application/json
       Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: no
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
   register: payload_loadcpu
 
 - name: Format the Prometheus response
