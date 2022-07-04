@@ -15,7 +15,6 @@
       host: "{{ role_openshift_upgrade_check_api }}"
       validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
 
-  tasks:
+  roles:
   - name: Test role
-    include_role:
-      name: role_upgrade_check
+    role: role_upgrade_check

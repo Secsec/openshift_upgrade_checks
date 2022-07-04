@@ -1,0 +1,111 @@
+---
+- name: Include the list of alerts to be checked
+  include_vars: "{{ role_path }}/defaults/etcd_performance.yml"
+
+- name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
+  kubernetes.core.k8s_info:
+    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    kind: Route
+    name: prometheus-k8s
+    namespace: openshift-monitoring
+  register: monitoring_routes
+
+- name: Set the prometheus URL
+  set_fact:
+    role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
+
+- name: Retrieve exceed backend_commit_duration
+  uri:
+    url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_backend_commit_query | urlencode }}"
+    method: GET
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  register: etcd_backend_commit_duration_result
+
+- set_fact:
+    etcd_backend_commit_duration_data: "{{ etcd_backend_commit_duration_result | json_query('json.data.result') }}"
+
+- set_fact:
+    etcd_backend_commit_duration_ratio: "{{ item | json_query('value[1]') }}"
+  loop: "{{ etcd_backend_commit_duration_data }}"
+
+- name: Assertion etcd_backend_commit_duration
+  assert:
+    that: "{{ etcd_backend_commit_duration_ratio | default(0) }} < {{ etcd_backend_commit_duration_min_ratio }}"
+    fail_msg: "etcd_backend_commit_duration_ratio: {{ etcd_backend_commit_duration_ratio | default(0) }}"
+    success_msg: "etcd_backend_commit_duration_ratio: {{ etcd_backend_commit_duration_ratio | default(0) }}"
+
+- name: Retrieve exceed disk_wal_fsync_duration
+  uri:
+    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_disk_wal_fsync_duration_query | urlencode }}'
+    method: GET
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  register: etcd_disk_wal_fsync_duration_result
+
+- set_fact:
+    etcd_disk_wal_fsync_duration_data: "{{ etcd_disk_wal_fsync_duration_result | json_query('json.data.result') }}"
+
+- set_fact:
+    etcd_disk_wal_fsync_duration_ratio: "{{ item | json_query('value[1]') }}"
+  loop: "{{ etcd_disk_wal_fsync_duration_data }}"
+
+- name: Assertion etcd_disk_wal_fsync_duration
+  assert:
+    that: "{{ etcd_disk_wal_fsync_duration_ratio | default(0) }} < {{ etcd_disk_wal_fsync_duration_min_ratio }}"
+    fail_msg: "etcd_disk_wal_fsync_duration_ratio: {{ etcd_disk_wal_fsync_duration_ratio | default(0) }}"
+    success_msg: "etcd_disk_wal_fsync_duration_ratio: {{ etcd_disk_wal_fsync_duration_ratio | default(0) }}"
+
+- name: Retrieve cpu_io_wait data
+  uri:
+    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_cpu_io_wait_query | urlencode }}'
+    method: GET
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  register: etcd_cpu_io_wait_result
+
+- set_fact:
+    etcd_cpu_io_wait_data: "{{ etcd_cpu_io_wait_result | json_query('json.data.result') }}"
+
+- set_fact:
+    etcd_cpu_io_wait_ratio: "{{ item | json_query('value[1]') }}"
+  loop: "{{ etcd_cpu_io_wait_data }}"
+
+- name: Assertion etcd_cpu_io_wait
+  assert:
+    that: "{{ etcd_cpu_io_wait_ratio | default(0) }} < {{ etcd_cpu_io_wait_min_ratio }}"
+    fail_msg: "etcd_cpu_io_wait_ratio: {{ etcd_cpu_io_wait_ratio | default(0) }}"
+    success_msg: "etcd_cpu_io_wait_ratio: {{ etcd_cpu_io_wait_ratio | default(0) }}"
+
+- name: Retrieve etcd_network_peer_round_trip_time data
+  uri:
+    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_network_peer_round_trip_time_query | urlencode }}'
+    method: GET
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+  register: etcd_network_peer_round_trip_time_result
+
+- set_fact:
+    etcd_network_peer_round_trip_time_data: "{{ etcd_network_peer_round_trip_time_result | json_query('json.data.result') }}"
+
+- set_fact:
+    etcd_network_peer_round_trip_time_ratio: "{{ item | json_query('value[1]') }}"
+  loop: "{{ etcd_network_peer_round_trip_time_data }}"
+
+- name: Assertion etcd_cpu_io_wait
+  assert:
+    that: "{{ etcd_network_peer_round_trip_time_ratio | default(0) }} < {{ etcd_network_peer_round_trip_time_min_ratio }}"
+    fail_msg: "etcd_network_peer_round_trip_time_ratio: {{ etcd_network_peer_round_trip_time_ratio | default(0) }}"
+    success_msg: "etcd_network_peer_round_trip_time_ratio: {{ etcd_network_peer_round_trip_time_ratio | default(0) }}"
