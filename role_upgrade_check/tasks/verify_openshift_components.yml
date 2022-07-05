@@ -8,10 +8,10 @@
 - name: Assert that nodes healthchecks are passing
   assert:
     that:
-      - "{{ item.status.conditions[0].status == 'False' }}" #MemoryPressure
-      - "{{ item.status.conditions[1].status == 'False' }}" #DiskPressure
-      - "{{ item.status.conditions[2].status == 'False' }}" #PIDAvailable
-      - "{{ item.status.conditions[3].status == 'True' }}" #Kubelet Status Ready
+      - item | json_query('status.conditions[? type == `MemoryPressure`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `DiskPressure`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `PIDPressure`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `Ready`].status') | first == 'True'
     quiet: yes
   with_items: "{{ node_list.resources }}"
   loop_control:
