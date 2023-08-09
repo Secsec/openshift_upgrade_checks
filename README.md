@@ -1,10 +1,7 @@
-
- role_openshift_upgrade_check
+role_openshift_upgrade_check
 =========
 
 This role allows you to perform pre-checks on your OpenShift cluster prior launching an upgrade on it. Each checks can be represented by a single task in the role, that can be skipped to avoid redundancy when relaunching the checks.
-
-
 
 Requirements
 ------------
@@ -58,28 +55,9 @@ ansible-playbook main.yml -v --extra-vars='role_openshift_upgrade_check_api=<YOU
 ```
 
 Conducted checks
----------------
+----------------
 
-* Upgrade Path checks
-* OpenShift Components checks
-    * Verify that no nodes has any pressure
-    * Verify that all pods are in healthy state
-    * Verify that no pods as a high restart count
-    * Verify that there is no pending CSR
-    * Verify that DNS pods are able to resolve kubernetes services
-    * Verify that no PDB can prevent node from being drained during the upgrade
-    * Verify that all MCP are healthy
-* Machine Config Pool checks
-    * Verify that there is no degraded or unavailable machines
-    * Verify that all machines are up to date
-* OpenShift cluster operators checks
-    * Verify that no cluster operator is in degraded state
-* Prometheus Alerts checks
-    * Check if any alert from the alert list is firing
-* Resources consumption checks
-    * Verify that no node is using more than 80% CPU
-    * Verify that no node is using more than 80% of RAM
-    * Verify that no node is using more than 80% of disk
+Detailed checks documentation can be found in the [`docs/checks.md`](docs/checks.md) file.
 
 License
 -------
