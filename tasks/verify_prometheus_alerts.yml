@@ -24,7 +24,7 @@
       Content-Type: application/json
       Accept: application/json
       Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+    validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"
   register: payload
 
 - name: Retrieve alerts before assessing them on criterias
@@ -37,7 +37,7 @@
     quiet: yes
   with_nested:
     - "{{ role_alerts }}"
-    - "{{ role_prometheus_alerts }}"
+    - "{{ openshift_upgrade_checks_prometheus_alerts }}"
   loop_control:
     label: "{{ item[0].labels.alertname }}"
   

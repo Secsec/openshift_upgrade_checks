@@ -4,6 +4,6 @@
 
   - name: Log in (obtain access token)
     redhat.openshift.openshift_auth:
-      username: "{{ role_upgrade_check_openshift_username }}"
-      password: "{{ role_upgrade_check_openshift_password }}"
+      username: "{{ openshift_upgrade_checks_username }}"
+      password: "{{ openshift_upgrade_checks_password }}"
     register: openshift_auth_results
