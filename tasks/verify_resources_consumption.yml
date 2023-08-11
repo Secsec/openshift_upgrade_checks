@@ -38,11 +38,11 @@
   
   - name: Assert cpu usage is below defined percentage
     assert:
-      that: "{{ item[0] | int < cpu_threshold_percentage }}"
+      that: "{{ item[0] | int < openshift_upgrade_checks_openshift_upgrade_checks_cpu_threshold_percentage }}"
       quiet: yes
     loop: "{{ node_list_cpu }}"
     loop_control:
-      label: "{{ item[1] }} < {{ cpu_threshold_percentage }}%"
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_openshift_upgrade_checks_cpu_threshold_percentage }}%"
 
 - name: Verify Node Memory Consumption
   block:
@@ -66,11 +66,11 @@
   
   - name: Assert memory usage is below defined percentage
     assert:
-      that: "{{ item[0] | int < memory_threshold_percentage }}"
+      that: "{{ item[0] | int < openshift_upgrade_checks_memory_threshold_percentage }}"
       quiet: yes
     loop: "{{ node_list_mem }}"
     loop_control:
-      label: "{{ item[1] }} < {{ memory_threshold_percentage }}%"
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_memory_threshold_percentage }}%"
 
 - name: Verify Node Disk Consumption
   block:
@@ -94,8 +94,8 @@
   
   - name: Assert disk usage is below defined percentage
     assert:
-      that: "{{ item[0] | int < disk_threshold_percentage }}"
+      that: "{{ item[0] | int < openshift_upgrade_checks_disk_threshold_percentage }}"
       quiet: yes
     loop: "{{ node_list_disk }}"
     loop_control:
-      label: "{{ item[1] }} < {{ disk_threshold_percentage }}%"
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_disk_threshold_percentage }}%"

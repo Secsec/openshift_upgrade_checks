@@ -37,7 +37,7 @@
     quiet: yes
   with_nested:
     - "{{ role_alerts }}"
-    - "{{ role_prometheus_alerts }}"
+    - "{{ openshift_upgrade_checks_prometheus_alerts }}"
   loop_control:
     label: "{{ item[0].labels.alertname }}"
   

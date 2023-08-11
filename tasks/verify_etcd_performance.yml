@@ -16,7 +16,7 @@
 
 - name: Retrieve exceed backend_commit_duration
   uri:
-    url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_backend_commit_query | urlencode }}"
+    url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ openshift_upgrade_checks_etcd_backend_commit_query | urlencode }}"
     method: GET
     headers:
       Content-Type: application/json
@@ -34,13 +34,13 @@
 
 - name: Assertion etcd_backend_commit_duration
   assert:
-    that: "{{ etcd_backend_commit_duration_ratio | default(0) }} < {{ etcd_backend_commit_duration_min_ratio }}"
+    that: "{{ etcd_backend_commit_duration_ratio | default(0) }} < {{ openshift_upgrade_checks_etcd_backend_commit_duration_min_ratio }}"
     fail_msg: "etcd_backend_commit_duration_ratio: {{ etcd_backend_commit_duration_ratio | default(0) }}"
     success_msg: "etcd_backend_commit_duration_ratio: {{ etcd_backend_commit_duration_ratio | default(0) }}"
 
 - name: Retrieve exceed disk_wal_fsync_duration
   uri:
-    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_disk_wal_fsync_duration_query | urlencode }}'
+    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ openshift_upgrade_checks_etcd_disk_wal_fsync_duration_query | urlencode }}'
     method: GET
     headers:
       Content-Type: application/json
@@ -58,13 +58,13 @@
 
 - name: Assertion etcd_disk_wal_fsync_duration
   assert:
-    that: "{{ etcd_disk_wal_fsync_duration_ratio | default(0) }} < {{ etcd_disk_wal_fsync_duration_min_ratio }}"
+    that: "{{ etcd_disk_wal_fsync_duration_ratio | default(0) }} < {{ openshift_upgrade_checks_openshift_upgrade_checks_etcd_disk_wal_fsync_duration_min_ratio }}"
     fail_msg: "etcd_disk_wal_fsync_duration_ratio: {{ etcd_disk_wal_fsync_duration_ratio | default(0) }}"
     success_msg: "etcd_disk_wal_fsync_duration_ratio: {{ etcd_disk_wal_fsync_duration_ratio | default(0) }}"
 
 - name: Retrieve cpu_io_wait data
   uri:
-    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ etcd_cpu_io_wait_query | urlencode }}'
+    url:  'https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ openshift_upgrade_checks_openshift_upgrade_checks_etcd_cpu_io_wait_query | urlencode }}'
     method: GET
     headers:
       Content-Type: application/json
@@ -82,7 +82,7 @@
 
 - name: Assertion etcd_cpu_io_wait
   assert:
-    that: "{{ etcd_cpu_io_wait_ratio | default(0) }} < {{ etcd_cpu_io_wait_min_ratio }}"
+    that: "{{ etcd_cpu_io_wait_ratio | default(0) }} < {{ openshift_upgrade_checks_etcd_cpu_io_wait_min_ratio }}"
     fail_msg: "etcd_cpu_io_wait_ratio: {{ etcd_cpu_io_wait_ratio | default(0) }}"
     success_msg: "etcd_cpu_io_wait_ratio: {{ etcd_cpu_io_wait_ratio | default(0) }}"
 

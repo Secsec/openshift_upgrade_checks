@@ -3,7 +3,7 @@
   block:
   - name: Retrieve the raw informations before processing them
     uri:
-      url: "https://api.openshift.com/api/upgrades_info/v1/graph?channel={{ role_upgrade_channel_name}}"
+      url: "https://api.openshift.com/api/upgrades_info/v1/graph?channel={{ openshift_upgrade_checks_channel_name}}"
       headers:
         Content-Type: application/json
       validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
@@ -12,7 +12,7 @@
   - name: Retrieve the channel list and the current version of the cluster in the raw datas
     set_fact:
       channels_list: "{{ item.metadata['io.openshift.upgrades.graph.release.channels'] }}"
-      version_list: "{{ version_list | default([]) + [item.version == role_upgrade_channel_version] }}"
+      version_list: "{{ version_list | default([]) + [item.version == openshift_upgrade_checks_channel_version] }}"
     with_items: "{{ role_upgrade_info.json.nodes }}"
     
   - name: Retrieve the index number of the starting entry corresponding to our current version

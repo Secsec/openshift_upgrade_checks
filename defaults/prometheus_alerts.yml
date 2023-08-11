@@ -1,5 +1,5 @@
 ---
-role_prometheus_alerts:
+openshift_upgrade_checks_prometheus_alerts:
   - etcdMembersDown 
   - KubeDeploymentReplicasMismatch 
   - ClusterOperatorDown

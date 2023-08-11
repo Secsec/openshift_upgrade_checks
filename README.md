@@ -1,4 +1,4 @@
-role_openshift_upgrade_check
+openshift_upgrade_checks
 =========
 
 This role allows you to perform pre-checks on your OpenShift cluster prior launching an upgrade on it. Each checks can be represented by a single task in the role, that can be skipped to avoid redundancy when relaunching the checks.
@@ -6,8 +6,8 @@ This role allows you to perform pre-checks on your OpenShift cluster prior launc
 Requirements
 ------------
 Pass as extra vars the following variables:
- - `role_openshift_upgrade_check_api`
- - `role_openshift_upgrade_check_validate_certs`
+ - `openshift_upgrade_checks_api`
+ - `openshift_upgrade_checks_validate_certs`
 
 Be sure to have a proper `openshift_credentials.yml` or pass it as an extra-vars too. (check the TODO!)
 
@@ -16,7 +16,7 @@ Role Variables
 
 | Variable | Default | Comments | Examples |
 |----------|---------|----------|----------|
-|role_prometheus_alerts| see defaults/prometheus_alerts.yml | This variable holds a list of critical alerts, that can be modified if needed | see defaults/prometheus_alerts.yml
+|openshift_upgrade_checks_prometheus_alerts| see defaults/prometheus_alerts.yml | This variable holds a list of critical alerts, that can be modified if needed | see defaults/prometheus_alerts.yml
 
 
 Requirements
@@ -29,7 +29,7 @@ Be sure to check prerequisites of this collection too (kubernetes python for exa
 Example Playbook
 ----------------
 ```
-ansible-playbook main.yml -v --extra-vars='role_openshift_upgrade_check_api=<YOUR API URL role_openshift_upgrade_check_validate_certs=<yes/no>' --ask-vault
+ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api=<YOUR_API_URL> openshift_upgrade_checks_validate_certs=<yes/no>' --ask-vault
 ```
 
 
@@ -37,21 +37,21 @@ ansible-playbook main.yml -v --extra-vars='role_openshift_upgrade_check_api=<YOU
 - name: Test upgrade role
   hosts: localhost module_defaults:
     - redhat.openshift.openshift_auth:
-        host: "{{ role_openshift_upgrade_check_api }}"
-        validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"  
+        host: "{{ openshift_upgrade_checks_api }}"
+        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
     - kubernetes.core.k8s_info:
-        host: "{{ role_openshift_upgrade_check_api }}"
-        validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"  
+        host: "{{ openshift_upgrade_checks_api }}"
+        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
     - kubernetes.core.k8s: 
-        host: "{{ role_openshift_upgrade_check_api }}" 
-        validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"  
+        host: "{{ openshift_upgrade_checks_api }}" 
+        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
     - kubernetes.core.k8s_exec: 
-        host: "{{ role_openshift_upgrade_check_api }}" 
-        validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}" 
+        host: "{{ openshift_upgrade_checks_api }}" 
+        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}" 
     tasks: 
       - name: Test role 
         include_role: 
-          name: role_upgrade_check
+          name: openshift_upgrade_checks
 ```
 
 Conducted checks
