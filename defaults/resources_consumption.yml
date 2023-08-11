@@ -1,0 +1,5 @@
+---
+# vars file for verify_resources_consumption task
+cpu_threshold_percentage: 80
+memory_threshold_percentage: 80
+disk_threshold_percentage: 80
