@@ -6,7 +6,7 @@ This role allows you to perform pre-checks on your OpenShift cluster prior launc
 Requirements
 ------------
 Pass as extra vars the following variables:
- - `openshift_upgrade_checks_api`
+ - `openshift_upgrade_checks_api_url`
  - `openshift_upgrade_checks_validate_certs`
 
 Be sure to have a proper `openshift_credentials.yml` or pass it as an extra-vars too. (check the TODO!)
@@ -29,29 +29,30 @@ Be sure to check prerequisites of this collection too (kubernetes python for exa
 Example Playbook
 ----------------
 ```
-ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api=<YOUR_API_URL> openshift_upgrade_checks_validate_certs=<yes/no>' --ask-vault
+ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api_url=<YOUR_API_URL> openshift_upgrade_checks_validate_certs=<yes/no>' --ask-vault
 ```
 
 
 ```yaml
 - name: Test upgrade role
-  hosts: localhost module_defaults:
+  hosts: localhost 
+  module_defaults:
     - redhat.openshift.openshift_auth:
-        host: "{{ openshift_upgrade_checks_api }}"
+        host: "{{ openshift_upgrade_checks_api_url }}"
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
     - kubernetes.core.k8s_info:
-        host: "{{ openshift_upgrade_checks_api }}"
+        host: "{{ openshift_upgrade_checks_api_url }}"
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
     - kubernetes.core.k8s: 
-        host: "{{ openshift_upgrade_checks_api }}" 
+        host: "{{ openshift_upgrade_checks_api_url }}" 
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
     - kubernetes.core.k8s_exec: 
-        host: "{{ openshift_upgrade_checks_api }}" 
+        host: "{{ openshift_upgrade_checks_api_url }}" 
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}" 
-    tasks: 
-      - name: Test role 
-        include_role: 
-          name: openshift_upgrade_checks
+  tasks: 
+    - name: Test role 
+      include_role: 
+        name: openshift_upgrade_checks
 ```
 
 Conducted checks

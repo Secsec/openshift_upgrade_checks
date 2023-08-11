@@ -6,7 +6,7 @@
       url: "https://api.openshift.com/api/upgrades_info/v1/graph?channel={{ openshift_upgrade_checks_channel_name}}"
       headers:
         Content-Type: application/json
-      validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
+      validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"
     register: role_upgrade_info
   
   - name: Retrieve the channel list and the current version of the cluster in the raw datas
