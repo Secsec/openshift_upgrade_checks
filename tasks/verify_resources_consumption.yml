@@ -1,4 +1,7 @@
 ---
+- name: Include the metrics thresholds
+  include_vars: "{{ role_path }}/defaults/resources_consumption.yml"
+
 - name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
   kubernetes.core.k8s_info:
     api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
@@ -6,37 +9,93 @@
     name: prometheus-k8s
     namespace: openshift-monitoring
   register: monitoring_routes
-
+  no_log: True
+ 
 - name: Set the prometheus URL
   set_fact:
     role_prometheus_url: "{{ monitoring_routes.resources | json_query('[].spec.host') }}"
+  no_log: True
 
-- name: Retrieve Node CPU utilization
-  uri:
-    url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance:node_cpu_utilisation:rate1m*100" 
-    method: GET
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-      Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
-    validate_certs: "{{ role_openshift_upgrade_check_validate_certs }}"
-  register: payload_loadcpu
+- name: Verify Node Memory Consumption
+  block:
+  - name: Retrieve Node CPU utilization
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance:node_cpu_utilisation:rate1m*100" 
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_loadcpu
+    no_log: True
+  
+  - name: Format cpu usage data
+    set_fact:
+      node_list_cpu: "{{ node_list_cpu | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_loadcpu.json.data.result }}"
+    no_log: True
+  
+  - name: Assert cpu usage is below defined percentage
+    assert:
+      that: "{{ item[0] | int < cpu_threshold_percentage }}"
+      quiet: yes
+    loop: "{{ node_list_cpu }}"
+    loop_control:
+      label: "{{ item[1] }} < {{ cpu_threshold_percentage }}%"
 
-- name: Format the Prometheus response
-  set_fact:
-    payload_test: "{{ payload_loadcpu | json_query('json.data.result') }}"
+- name: Verify Node Memory Consumption
+  block:
+  - name: Retrieve Node Memory utilization
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance:node_memory_utilisation:ratio*100" 
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_loadmem
+    no_log: True
 
-- name: Create a convenient list prior to checking CPU Usage 
-  set_fact:
-    node_list_cpu: "{{ node_list_cpu | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
-  loop: "{{ payload_test }}"
-  loop_control:
-    label: "{{ item.metric.instance }}"
+  - name: Format memory usage data 
+    set_fact:
+      node_list_mem: "{{ node_list_mem | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_loadmem.json.data.result }}"
+    no_log: True
+  
+  - name: Assert memory usage is below defined percentage
+    assert:
+      that: "{{ item[0] | int < memory_threshold_percentage }}"
+      quiet: yes
+    loop: "{{ node_list_mem }}"
+    loop_control:
+      label: "{{ item[1] }} < {{ memory_threshold_percentage }}%"
 
-- name: Assert that no CPU usage is over 80%
-  assert:
-    that: "{{ item[0] | int < 80 }}" #Variabilize the threshold percentage
-    quiet: yes
-  loop: "{{ node_list_cpu }}"
-  loop_control:
-    label: "{{ item[1] }}"
+- name: Verify Node Disk Consumption
+  block:
+  - name: Retrieve Node Disk utilization
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query=instance_device:node_disk_io_time_seconds:rate1m*100"
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_loaddisk
+    no_log: True
+  
+  - name: Format disk usage data 
+    set_fact:
+      node_list_disk: "{{ node_list_disk | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_loaddisk.json.data.result }}"
+    no_log: True
+  
+  - name: Assert disk usage is below defined percentage
+    assert:
+      that: "{{ item[0] | int < disk_threshold_percentage }}"
+      quiet: yes
+    loop: "{{ node_list_disk }}"
+    loop_control:
+      label: "{{ item[1] }} < {{ disk_threshold_percentage }}%"

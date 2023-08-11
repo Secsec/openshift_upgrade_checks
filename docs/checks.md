@@ -27,9 +27,11 @@ Task file: `tasks/verify_prometheus_alerts.yml`
 ## Resources consumption
 Task file: `tasks/verify_resources_consumption.yml`
 
-|Check                                            |Expected result|
-|-------------------------------------------------|---------------|
-|How much CPU is currently consumed on each node ?|<80%           |
+|Check                                               |Expected result|
+|----------------------------------------------------|---------------|
+|How much CPU is currently consumed on each node ?   |<80% - Variabilized |
+|How much memory is currently consumed on each node ?|<80% - Variabilized |
+|How much disk is currently consumed on each node ?  |<80% - Variabilized |
 
 ## API Deprecation
 Task file: `tasks/verify_api_deprecation.yml`
