@@ -2,18 +2,25 @@
 - name: Check the upgrade path for your OpenShift version
   block:
   - name: Retrieve the raw informations before processing them
-    uri:
+    ansible.builtin.uri:
       url: "https://api.openshift.com/api/upgrades_info/v1/graph?channel={{ openshift_upgrade_checks_channel_name}}"
       headers:
         Content-Type: application/json
+      return_content: true
+      body_format: json
       validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"
-    register: role_upgrade_info
+    register: __upgrade_info_raw
+
+  - name: Convert raw content to json and store it in a variable
+    set_fact:
+      __ocp_upgrade_info_nodes: "{{ __upgrade_info_raw.content | from_json | json_query('nodes')  }}"
+      __ocp_upgrade_info_edges: "{{ __upgrade_info_raw.content | from_json | json_query('edges') }}"
   
   - name: Retrieve the channel list and the current version of the cluster in the raw datas
     set_fact:
       channels_list: "{{ item.metadata['io.openshift.upgrades.graph.release.channels'] }}"
       version_list: "{{ version_list | default([]) + [item.version == openshift_upgrade_checks_channel_version] }}"
-    with_items: "{{ role_upgrade_info.json.nodes }}"
+    with_items: "{{ __ocp_upgrade_info_nodes }}"
     
   - name: Retrieve the index number of the starting entry corresponding to our current version
     set_fact:
@@ -22,12 +29,12 @@
   - name: Correlate the edges with the starting version
     set_fact:
       edges_correlation: "{{ edges_correlation | default([]) +[item[1]] }}"
-    loop: "{{ role_upgrade_info.json.edges }}"
+    loop: "{{ __ocp_upgrade_info_edges }}"
     when:  item[0] | string == index_version
   
   - name: Retrieve the version based on the previous edge correlation
     set_fact:
-      version_path: "{{ (version_path | default([]) + [role_upgrade_info.json.nodes[item].version]) | sort }}"
+      version_path: "{{ (version_path | default([]) + [__ocp_upgrade_info_nodes[item].version]) | sort }}"
     with_items: "{{ edges_correlation }}"
   
   - debug:
