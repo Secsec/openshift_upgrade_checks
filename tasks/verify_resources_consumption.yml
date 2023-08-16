@@ -38,11 +38,11 @@
   
   - name: Assert cpu usage is below defined percentage
     assert:
-      that: "{{ item[0] | int < openshift_upgrade_checks_openshift_upgrade_checks_cpu_threshold_percentage }}"
+      that: "{{ item[0] | int < openshift_upgrade_checks_cpu_threshold_percentage }}"
       quiet: yes
     loop: "{{ node_list_cpu }}"
     loop_control:
-      label: "{{ item[1] }} < {{ openshift_upgrade_checks_openshift_upgrade_checks_cpu_threshold_percentage }}%"
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_cpu_threshold_percentage }}%"
 
 - name: Verify Node Memory Consumption
   block:
