@@ -1,9 +1,6 @@
 ---
-  - name: Retrieve OpenShift credentials
-    include_vars: "{{ role_path }}/defaults/openshift_credentials.yml"
-
-  - name: Log in (obtain access token)
-    redhat.openshift.openshift_auth:
-      username: "{{ openshift_upgrade_checks_username }}"
-      password: "{{ openshift_upgrade_checks_password }}"
-    register: openshift_auth_results
+- name: Log in (obtain access token)
+  redhat.openshift.openshift_auth:
+    username: "{{ openshift_upgrade_checks_username }}"
+    password: "{{ openshift_upgrade_checks_password }}"
+  register: openshift_auth_results
