@@ -1,7 +1,4 @@
 ---
-- name: Include the metrics thresholds
-  include_vars: "{{ role_path }}/defaults/resources_consumption.yml"
-
 - name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
   kubernetes.core.k8s_info:
     api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"

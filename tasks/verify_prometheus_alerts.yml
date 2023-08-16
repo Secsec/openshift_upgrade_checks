@@ -1,7 +1,4 @@
 ---
-- name: Include the list of alerts to be checked
-  include_vars: "{{ role_path }}/defaults/prometheus_alerts.yml"
-
 - name: Retrieve the prometheus URL of the cluster
   block:
     - name: Retrieve the prometheus-k8s route from the openshift-monitoring namespace
