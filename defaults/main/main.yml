@@ -2,7 +2,7 @@
 # defaults file for role_upgrade_check
 openshift_upgrade_checks_channel_name: fast-4.3
 openshift_upgrade_checks_channel_version: 4.2.18 
-openshift_upgrade_checks_api_url: "https://api.cluster.domain.com:6443" 
+openshift_upgrade_checks_api_url: ""
 openshift_upgrade_checks_validate_certs: "no"
 openshift_upgrade_checks_username: ""
 openshift_upgrade_checks_password: ""

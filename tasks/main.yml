@@ -1,5 +1,5 @@
 ---
-# tasks file for role_upgrade_check
+ tasks file for role_upgrade_check
 - import_tasks: verify_upgrade_path.yml
   tags:
     - verify_upgrade_path 
@@ -21,12 +21,12 @@
     - verify_resources_consumption
 
 - import_tasks: verify_api_deprecation.yml
-  tags:
-    - verify_api_deprecation
+tags:
+- verify_api_deprecation
 
 - import_tasks: verify_etcd_performance.yml
-  tags:
-    - verify_etcd_performance
+tags:
+- verify_etcd_performance
 
 - import_tasks: revoke_openshift_auth.yml
   tags:

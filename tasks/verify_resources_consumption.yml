@@ -96,3 +96,57 @@
     loop: "{{ node_list_disk }}"
     loop_control:
       label: "{{ item[1] }} < {{ openshift_upgrade_checks_disk_threshold_percentage }}%"
+
+
+- name: Verify that requests are not taking a too much part of node cpus
+  block:
+  - name: Retrieve requests against CPU
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ openshift_upgrade_checks_requests_overall_cpu_query | urlencode }}"
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_requestscpu
+
+  - name: Format request_cpu usage data
+    set_fact:
+      request_cpu_list: "{{ request_cpu_list | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_requestscpu.json.data.result }}"
+
+  - name: Assert that cpu requests compared to available cpu per node is below defined threshold
+    assert:
+      that: "{{ item[0] | int < openshift_upgrade_checks_requests_overall_cpu_query_threshold }}"
+      quiet: yes
+    loop: "{{ request_cpu_list }}"
+    loop_control:
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_requests_overall_cpu_query_threshold }}%"
+
+- name: Verify that requests are actually consuming what they should consume
+  block:
+  - name: Retrieve requests cpu consumption against CPU requests
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ openshift_upgrade_checks_comsumption_overall_requests_query | urlencode }}"
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_requestscpucons
+
+  - name: Format request_cpu_cons usage data
+    set_fact:
+      request_cpucons_list: "{{ request_cpucons_list | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_requestscpucons.json.data.result }}"
+
+  - name: Assert that cpu requests are actually consuming what they are reserving
+    assert:
+      that: "{{ item[0] | int < openshift_upgrade_checks_comsumption_overall_requests_query_threshold }}"
+      quiet: yes
+    loop: "{{ request_cpucons_list }}"
+    loop_control:
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_comsumption_overall_requests_query_threshold }}%"
+
