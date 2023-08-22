@@ -36,19 +36,6 @@ ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api_url=<YOU
 ```yaml
 - name: Test upgrade role
   hosts: localhost 
-  module_defaults:
-    - redhat.openshift.openshift_auth:
-        host: "{{ openshift_upgrade_checks_api_url }}"
-        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
-    - kubernetes.core.k8s_info:
-        host: "{{ openshift_upgrade_checks_api_url }}"
-        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
-    - kubernetes.core.k8s: 
-        host: "{{ openshift_upgrade_checks_api_url }}" 
-        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"  
-    - kubernetes.core.k8s_exec: 
-        host: "{{ openshift_upgrade_checks_api_url }}" 
-        validate_certs: "{{ openshift_upgrade_checks_validate_certs }}" 
   tasks: 
     - name: Test role 
       include_role: 
