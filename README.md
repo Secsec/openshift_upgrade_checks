@@ -3,7 +3,7 @@ openshift_upgrade_checks
 
 This role allows you to perform pre-checks on your OpenShift cluster prior launching an upgrade on it. Each checks can be represented by a single task in the role, that can be skipped to avoid redundancy when relaunching the checks.
 
-Requirements
+Variables required
 ------------
 This role requires some vars to function properly. You can pass them as extra vars, through a var file or a vault one.
 
@@ -14,28 +14,10 @@ This role requires some vars to function properly. You can pass them as extra va
 |openshift_upgrade_checks_username | Holds the username of the user that will perform the checks | `admin-viewer`
 |openshift_upgrade_checks_password | Holds the password of the user that will perform the checks | `really-long-and-secure-password` 
 
-Role Variables
---------------
-
-| Variable | Default | Comments | Examples |
-|----------|---------|----------|----------|
-|openshift_upgrade_checks_prometheus_alerts| see defaults/prometheus_alerts.yml | This variable holds a list of critical alerts, that can be modified if needed | see defaults/prometheus_alerts.yml
-
-
-Requirements
-------------
-This role requires the following collection:
- - [Openshift collection](https://console.redhat.com/ansible/automation-hub/repo/published/redhat/openshift) (v2.0.1)
- 
-Be sure to check prerequisites of this collection too (kubernetes python for example).
-
 Example Playbook
 ----------------
-```
-ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api_url=<YOUR_API_URL> openshift_upgrade_checks_validate_certs=<yes/no>' --ask-vault
-```
 
-
+Create a playbook based on this example, do not forget to fill in the required vars values : 
 ```yaml
 - name: Test upgrade role
   hosts: localhost 
@@ -53,16 +35,36 @@ ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api_url=<YOU
         host: "{{ openshift_upgrade_checks_api_url }}" 
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}" 
   vars:
-    openshift_upgrade_checks_api_url: https://api.cluster.domain.com:6443
-    openshift_upgrade_checks_validate_certs: no
+    openshift_upgrade_checks_api_url: "<YOUR_API_URL>"
+    openshift_upgrade_checks_validate_certs: <yes/no>
     # We strongly advise to use a vault file to save those vars
-    openshift_upgrade_checks_username: admin-viewer
-    openshift_upgrade_checks_password: `really-long-and-secure-password`
+    openshift_upgrade_checks_username: "<username>"
+    openshift_upgrade_checks_password: "<password>"
   tasks: 
     - name: Test role 
       include_role: 
         name: openshift_upgrade_checks
 ```
+
+Run the playbook :
+```
+ansible-playbook main.yml -v 
+```
+
+Role Variables
+--------------
+
+| Variable | Default | Comments | Examples |
+|----------|---------|----------|----------|
+|openshift_upgrade_checks_prometheus_alerts| see defaults/prometheus_alerts.yml | This variable holds a list of critical alerts, that can be modified if needed | see defaults/prometheus_alerts.yml
+
+
+Requirements
+------------
+This role requires the following collection:
+ - [Openshift collection](https://console.redhat.com/ansible/automation-hub/repo/published/redhat/openshift) (v2.0.1)
+ 
+Be sure to check prerequisites of this collection too (kubernetes python for example).
 
 Conducted checks
 ----------------
