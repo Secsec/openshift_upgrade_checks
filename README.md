@@ -5,11 +5,14 @@ This role allows you to perform pre-checks on your OpenShift cluster prior launc
 
 Requirements
 ------------
-Pass as extra vars the following variables:
- - `openshift_upgrade_checks_api_url`
- - `openshift_upgrade_checks_validate_certs`
+This role requires some vars to function properly. You can pass them as extra vars, through a var file or a vault one.
 
-Be sure to have a proper `openshift_credentials.yml` or pass it as an extra-vars too. (check the TODO!)
+| Variable | Default | Comments | Examples |
+|----------|---------|----------|----------|
+|openshift_upgrade_checks_api_url | `` | Holds the cluster api URL | `https://api.cluster.domain.com:6443`
+|openshift_upgrade_checks_validate_certs | `` | Should the API and Prometheus certs be validated against the system CA ? | `yes/no` 
+|openshift_upgrade_checks_username | `` | Holds the username of the user that will perform the checks | `admin-viewer`
+|openshift_upgrade_checks_password | `` | Holds the password of the user that will perform the checks | `really-long-and-secure-password` 
 
 Role Variables
 --------------
@@ -49,6 +52,12 @@ ansible-playbook main.yml -v --extra-vars='openshift_upgrade_checks_api_url=<YOU
     - kubernetes.core.k8s_exec: 
         host: "{{ openshift_upgrade_checks_api_url }}" 
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}" 
+  vars:
+    openshift_upgrade_checks_api_url: https://api.cluster.domain.com:6443
+    openshift_upgrade_checks_validate_certs: no
+    # We strongly advise to use a vault file to save those vars
+    openshift_upgrade_checks_username: admin-viewer
+    openshift_upgrade_checks_password: `really-long-and-secure-password`
   tasks: 
     - name: Test role 
       include_role: 
@@ -68,7 +77,6 @@ BSD
 TODO
 -------
 
-- Get the openshift_credentials.yml out of the role variables.
 - Get the main.yml out of the role variables.
 - add a no log parameters on tasks
 - sanitize the SSL verification on the uri module
