@@ -7,12 +7,12 @@ Requirements
 ------------
 This role requires some vars to function properly. You can pass them as extra vars, through a var file or a vault one.
 
-| Variable | Default | Comments | Examples |
-|----------|---------|----------|----------|
-|openshift_upgrade_checks_api_url | `` | Holds the cluster api URL | `https://api.cluster.domain.com:6443`
-|openshift_upgrade_checks_validate_certs | `` | Should the API and Prometheus certs be validated against the system CA ? | `yes/no` 
-|openshift_upgrade_checks_username | `` | Holds the username of the user that will perform the checks | `admin-viewer`
-|openshift_upgrade_checks_password | `` | Holds the password of the user that will perform the checks | `really-long-and-secure-password` 
+| Variable | Comments | Examples |
+|----------|----------|----------|
+|openshift_upgrade_checks_api_url | Holds the cluster api URL | `https://api.cluster.domain.com:6443`
+|openshift_upgrade_checks_validate_certs | Should the API and Prometheus certs be validated against the system CA ? | `yes/no` 
+|openshift_upgrade_checks_username | Holds the username of the user that will perform the checks | `admin-viewer`
+|openshift_upgrade_checks_password | Holds the password of the user that will perform the checks | `really-long-and-secure-password` 
 
 Role Variables
 --------------
