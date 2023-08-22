@@ -34,6 +34,7 @@ Task file: `tasks/verify_resources_consumption.yml`
 |How much disk is currently consumed on each node ?  |<80% - Variabilized |
 |How much CPU requests are requesting against all available CPUs ?  |<80% - Variabilized |
 |How much CPU from requests is actually consumed compared to all requests ?  |<30% - Variabilized |
+|How much MEM request are taking compared to overall MEM on a node ?  |<80% - Variabilized |
 
 ## API Deprecation
 Task file: `tasks/verify_api_deprecation.yml`

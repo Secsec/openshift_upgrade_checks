@@ -7,3 +7,8 @@ openshift_upgrade_checks_comsumption_overall_requests_query: '(sum(instance:node
 openshift_upgrade_checks_requests_overall_cpu_query: '(sum without (node, container, endpoint, namespace, pod ,priority, prometheus, resource, job, scheduler, service, unit) (label_replace(kube_pod_resource_request{resource="cpu"}, "instance", "$1", "node", "(.*)"))) / sum(node_cpu_info) by (instance) *100' 
 openshift_upgrade_checks_requests_overall_cpu_query_threshold: 80
 openshift_upgrade_checks_comsumption_overall_requests_query_threshold: 30
+#MEMORY REQUESTS PROMQL AND TRESHOLDS
+openshift_upgrade_checks_consumption_overall_memrequests_query:
+openshift_upgrade_checks_requests_overall_mem_query: '(sum by (instance) (label_replace(kube_pod_resource_request{resource="memory"}, "instance", "$1", "node", "(.*)"))) / sum((label_replace(machine_memory_bytes, "instance", "$1", "node", "(.*)"))) by (instance) *100'
+openshift_upgrade_checks_requests_overall_mem_query_threshold: 80
+

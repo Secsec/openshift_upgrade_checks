@@ -150,3 +150,30 @@
     loop_control:
       label: "{{ item[1] }} < {{ openshift_upgrade_checks_comsumption_overall_requests_query_threshold }}%"
 
+- name: Verify that memory requests are below specified treshold
+  block:
+  - name: Retrieve requests memory  against total memory
+    uri:
+      url:  "https://{{ role_prometheus_url[0] }}/api/v1/query?query={{ openshift_upgrade_checks_requests_overall_mem_query | urlencode }}"
+      method: GET
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        Authorization: "Bearer {{ openshift_auth_results.openshift_auth.api_key }}"
+      validate_certs: no
+    register: payload_requestsmem
+
+  - name: Format request_mem_list usage data
+    set_fact:
+      request_mem_list: "{{ request_mem_list | default([]) + [[item | json_query('value[1]'), item | json_query('metric.instance')]] }}"
+    loop: "{{ payload_requestsmem.json.data.result }}"
+
+  - name: Assert that mem requests are below the defined treshold
+    assert:
+      that: "{{ item[0] | int < openshift_upgrade_checks_requests_overall_mem_query_threshold }}"
+      quiet: yes
+    loop: "{{ request_mem_list }}"
+    loop_control:
+      label: "{{ item[1] }} < {{ openshift_upgrade_checks_requests_overall_mem_query_threshold }}%"
+
+
