@@ -32,7 +32,7 @@
   - import_tasks: revoke_openshift_auth.yml
     tags:
       - revoke_openshift_auth
-
+      
   module_defaults:
     - redhat.openshift.openshift_auth:
         host: "{{ openshift_upgrade_checks_api_url }}"
@@ -46,3 +46,4 @@
     - kubernetes.core.k8s_exec:
         host: "{{ openshift_upgrade_checks_api_url }}"
         validate_certs: "{{ openshift_upgrade_checks_validate_certs }}"
+
