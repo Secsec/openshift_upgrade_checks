@@ -1,17 +1,21 @@
 ---
 # tasks file for role_upgrade_check
 - block:
+  - import_tasks: obtain_openshift_auth.yml
+    tags:
+      - obtain_openshift_auth
+
   - import_tasks: verify_upgrade_path.yml
     tags:
       - verify_upgrade_path 
   
-  - import_tasks: obtain_openshift_auth.yml
-    tags:
-      - obtain_openshift_auth
-  
   - import_tasks: verify_openshift_components.yml
     tags:
       - verify_openshift_components
+
+  - import_tasks: verify_openshift_mcp_and_nodes.yml
+    tags:
+      - verify_openshift_mcp_and_nodes
   
   - import_tasks: verify_prometheus_alerts.yml
     tags:

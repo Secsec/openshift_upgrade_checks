@@ -1,0 +1,185 @@
+---
+- name: Retrieve all Nodes
+  kubernetes.core.k8s_info:
+    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    kind: Node
+  register: node_list
+
+
+- name: Assert that nodes healthchecks are passing
+  assert:
+    that:
+      - item | json_query('status.conditions[? type == `MemoryPressure`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `DiskPressure`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `PIDPressure`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `Ready`].status') | first == 'True'
+    quiet: yes
+  with_items: "{{ node_list.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
+
+- name: Retrieve all MachineConfigPools
+  kubernetes.core.k8s_info:
+    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    kind: MachineConfigPool
+  register: __mcp_list
+
+
+- name: Assert that all MachineConfigPools are up to date
+  assert:
+    that:
+      - item | json_query('status.conditions[? type == `RenderDegraded`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `NodeDegraded`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `Degraded`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `Updating`].status') | first == 'False'
+      - item | json_query('status.conditions[? type == `Updated`].status') | first == 'True'
+    quiet: yes
+  loop: "{{ __mcp_list.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
+
+- name: Assert that all MachineConfigPools have all their machines ready
+  assert:
+    that:
+      - item | json_query('status.degradedMachineCount') == 0
+      - item | json_query('status.unavailableMachineCount') == 0
+      - item | json_query('status.readyMachineCount') == item | json_query('status.machineCount') 
+      - item | json_query('status.updatedMachineCount') == item | json_query('status.machineCount') 
+    quiet: yes
+  loop: "{{ __mcp_list.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
+    #- name: Assert that nodes healthchecks are passing
+    #  assert:
+    #    that:
+    #      - item | json_query('status.conditions[? type == `MemoryPressure`].status') | first == 'False'
+    #      - item | json_query('status.conditions[? type == `DiskPressure`].status') | first == 'False'
+    #      - item | json_query('status.conditions[? type == `PIDPressure`].status') | first == 'False'
+    #      - item | json_query('status.conditions[? type == `Ready`].status') | first == 'True'
+    #    quiet: yes
+    #  with_items: "{{ node_list.resources }}"
+    #  loop_control:
+    #    label: "{{ item.metadata.name }}"
+    #
+    #- name: Check cluster operators state
+    #  block:
+    #    - name: Fetch cluster operators resources
+    #      kubernetes.core.k8s_info:
+    #        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #        kind: ClusterOperator
+    #      register: cluster_operators
+    #
+    #    - name: Assert that all cluster operators are available
+    #      assert:
+    #        that:
+    #          - item | json_query('status.conditions[? type == `Available`].status') | first == 'True'
+    #          - item | json_query('status.conditions[? type == `Progressing`].status') | first == 'False'
+    #          - item | json_query('status.conditions[? type == `Degraded`].status') | first == 'False'
+    #        quiet: yes
+    #      loop: "{{ cluster_operators.resources }}"
+    #      loop_control:
+    #        label: "{{ item.metadata.name }}"
+    #
+    #- name: Retrieve all non running pods (bad state)
+    #  kubernetes.core.k8s_info:
+    #    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #    kind: Pod
+    #    field_selectors:
+    #      - status.phase!=Running
+    #      - status.phase!=Completed
+    #      - status.phase!=Succeeded
+    #  register: unhealthy_pods
+    #
+    #- name: Assert that there are no unhealthy pods
+    #  assert:
+    #    that:
+    #      - "{{ unhealthy_pods.resources | length == 0 }}"
+    #
+    #- name: Retrieve running pods prior to checking their restart count
+    #  kubernetes.core.k8s_info:
+    #    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #    kind: Pod
+    #    field_selectors:
+    #      - status.phase==Running
+    #  register: pod_list_running
+    #
+    #- name: Check that there are no pods with a high restart count
+    #  assert:
+    #    that:
+    #      - "{{ item | json_query('[].status.containerStatuses[].restartCount') | int }} < 3" #Variable for role can be replaced here
+    #    quiet: yes 
+    #  loop: "{{ pod_list_running.resources }}"
+    #  loop_control:
+    #    label: "{{ item.metadata.name }}"
+    #
+    #- name: Retrieve pending CSRs
+    #  kubernetes.core.k8s_info:
+    #    api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #    kind: CertificateSigningRequest
+    #  register: csr
+    #
+    #- name: Assert that there are not pending CSRs
+    #  assert:
+    #    that:
+    #      - "'Pending' not in item | json_query('status.conditions[].type')"
+    #    quiet: yes
+    #  loop: "{{ csr.resources }}"
+    #  loop_control:
+    #    label: "{{ item.metadata.name }}"
+    #
+    #        #- name: Test resolving kubernetes service hostname to and from every DNS pod
+    #        #  block:
+    #        #    - name: Retrieve DNS pods
+    #        #      kubernetes.core.k8s_info:
+    #        #        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #        #        kind: Pod
+    #        #        namespace: openshift-dns
+    #        #        field_selectors:
+    #        #          - status.phase==Running
+    #        #      register: dns_pods
+    #        #
+    #        #    - name: Create a convenient list for checking DNS entries
+    #        #      set_fact:
+    #        #        dns_pods_convenient: "{{ dns_pods_convenient | default([]) + [[item | json_query('metadata.name'),item | json_query('status.podIP')]] }}"
+    #        #      loop: "{{ dns_pods.resources }}"
+    #        #      loop_control:
+    #        #        label: "{{ item.metadata.name }}"
+    #        #      
+    #        #    - name: Execute the DNS lookup
+    #        #      kubernetes.core.k8s_exec:
+    #        #        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #        #        namespace: "openshift-dns"
+    #        #        pod: "{{ item[0] }}"
+    #        #        container: dns
+    #        #        command: "dig @{{ item[1] }} kubernetes.default.svc.cluster.local -p 5353 +short"
+    #        #      loop: "{{ dns_pods_convenient }}"
+    #
+    #- name: Check if there are any PDBs that can prevent node from being drained during an update
+    #  block:
+    #    - name: Retrieve all the PDBs
+    #      kubernetes.core.k8s_info:
+    #        api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+    #        api_version: "policy/v1beta1" # Careful when it changes
+    #        kind: PodDisruptionBudget
+    #      register: pdbs
+    #
+    #    - name: Format the PDBs in a convenient way prior checking
+    #      set_fact:
+    #        pdbs_convenient: "{{ pdbs_convenient | default([]) + [[item | json_query('metadata.name'), item | json_query('metadata.namespace'), item | json_query('spec.maxUnavailable'), item | json_query('spec.minAvailable'), item | json_query('status.expectedPods')]] }}"
+    # #[Name,  Namespace  maxUnavailable, minUnavailable, expectedPods] 
+    #      loop: "{{ pdbs.resources }}"
+    #      loop_control:
+    #        label: "{{ item.metadata.name }}"
+    #
+    #    - name: Assert that PDBs are correct
+    #      assert:
+    #        that:
+    #          - "{{ (item[2] | int > 1) or (item[2] !=  '0%')  }}" # max unavailable minimum to 2
+    #          - "{{  (item[3] | int != item[4] | int ) and ((item[3] | int < item[4] | int) or (item[3] != '100%')) }}" # min unavailable can not be inferior to expected pods
+    #        quiet: yes
+    #      loop: "{{ pdbs_convenient }}"
+    #      loop_control:
+    #        label: "{{ item[0] }}"
