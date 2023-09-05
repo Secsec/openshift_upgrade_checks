@@ -3,6 +3,11 @@ openshift_upgrade_checks
 
 This role allows you to perform pre-checks on your OpenShift cluster prior launching an upgrade on it. Each checks can be represented by a single task in the role, that can be skipped to avoid redundancy when relaunching the checks.
 
+Supported OpenShift versions
+=========
+
+This role is intended to be run on any OpenShift 4.X cluster. OpenShift 3.X is not supported by the role.
+
 Variables required
 ------------
 This role requires some vars to function properly. You can pass them as extra vars, through a var file or a vault one.
