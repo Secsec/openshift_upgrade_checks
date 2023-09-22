@@ -3,6 +3,7 @@
 - block:
   - import_tasks: verify_upgrade_path.yml
     tags:
+      - always
       - verify_upgrade_path 
   
   - import_tasks: obtain_openshift_auth.yml
@@ -31,6 +32,7 @@
   
   - import_tasks: revoke_openshift_auth.yml
     tags:
+      - always
       - revoke_openshift_auth
       
   module_defaults:
